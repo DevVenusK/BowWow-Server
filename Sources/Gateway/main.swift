@@ -19,6 +19,10 @@ try routes(app)
 let port = Environment.get("PORT").flatMap(Int.init) ?? 
            Environment.get("GATEWAY_PORT").flatMap(Int.init) ?? 8000
 app.http.server.configuration.port = port
+app.http.server.configuration.hostname = "0.0.0.0"
 
 app.logger.info("🚀 Gateway Service starting on port \(port)")
-try app.run()
+
+// 서버를 직접 시작하고 실행
+try app.start()
+try app.running?.onStop.wait()

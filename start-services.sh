@@ -4,32 +4,39 @@
 
 echo "🚀 Starting BowWow Services..."
 
-# Start all services in background
-echo "📊 Starting AnalyticsService on port 8005..."
-./AnalyticsService serve --env production --hostname 0.0.0.0 --port 8005 &
+# Export environment variables for consistent port configuration
+export USER_SERVICE_PORT=8001
+export LOCATION_SERVICE_PORT=8002  
+export SIGNAL_SERVICE_PORT=8003
+export PUSH_SERVICE_PORT=8004
+export ANALYTICS_SERVICE_PORT=8005
+export GATEWAY_PORT=${PORT:-8000}
+
+# Start all services in background (no command-line arguments needed)
+echo "📊 Starting AnalyticsService..."
+./AnalyticsService &
 ANALYTICS_PID=$!
 
-echo "📍 Starting LocationService on port 8002..."  
-./LocationService serve --env production --hostname 0.0.0.0 --port 8002 &
+echo "📍 Starting LocationService..."  
+./LocationService &
 LOCATION_PID=$!
 
-echo "📧 Starting PushService on port 8004..."
-./PushService serve --env production --hostname 0.0.0.0 --port 8004 &
+echo "📧 Starting PushService..."
+./PushService &
 PUSH_PID=$!
 
-echo "📡 Starting SignalService on port 8003..."
-./SignalService serve --env production --hostname 0.0.0.0 --port 8003 &
+echo "📡 Starting SignalService..."
+./SignalService &
 SIGNAL_PID=$!
 
-echo "👤 Starting UserService on port 8001..."
-./UserService serve --env production --hostname 0.0.0.0 --port 8001 &
+echo "👤 Starting UserService..."
+./UserService &
 USER_PID=$!
 
 # Wait a moment for services to start
 sleep 5
 
-echo "🌐 Starting Gateway on port ${PORT:-8000}..."
-# Gateway는 환경변수 PORT를 직접 읽음
+echo "🌐 Starting Gateway..."
 ./Gateway &
 GATEWAY_PID=$!
 

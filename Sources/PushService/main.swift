@@ -11,6 +11,9 @@ try routes(app)
 
 let port = Environment.get("PUSH_SERVICE_PORT").flatMap(Int.init) ?? 8004
 app.http.server.configuration.port = port
+app.http.server.configuration.hostname = "0.0.0.0"
 
 app.logger.info("🔔 Push Service starting on port \(port)")
-try app.run()
+
+try app.start()
+try app.running?.onStop.wait()
