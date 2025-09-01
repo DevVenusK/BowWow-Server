@@ -15,4 +15,5 @@ app.http.server.configuration.hostname = "0.0.0.0"
 
 app.logger.info("📊 Analytics Service starting on port \(port)")
 
-try app.run()
+try app.start()
+try app.running?.onStop.wait()

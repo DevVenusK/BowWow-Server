@@ -25,4 +25,6 @@ app.http.server.configuration.hostname = "0.0.0.0"
 
 app.logger.info("🚀 Gateway Service starting on port \(port)")
 
-try app.run()
+// Railway 환경에서 명령줄 파싱 에러를 완전히 우회하기 위해 서버를 직접 시작
+try app.start()
+try app.running?.onStop.wait()
