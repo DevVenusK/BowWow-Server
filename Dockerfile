@@ -40,8 +40,12 @@ COPY --from=build --chown=vapor:vapor /build/.build/release/SignalService ./Sign
 COPY --from=build --chown=vapor:vapor /build/.build/release/PushService ./PushService
 COPY --from=build --chown=vapor:vapor /build/.build/release/AnalyticsService ./AnalyticsService
 
+# Copy startup script
+COPY --chown=vapor:vapor start-services.sh ./start-services.sh
+RUN chmod +x ./start-services.sh
+
 # Switch to vapor user
 USER vapor:vapor
 
-# Default command (will be overridden by Railway for each service)
-CMD ./Gateway serve --env production --hostname 0.0.0.0 --port ${PORT:-8000}
+# Start all services using the startup script
+CMD ["./start-services.sh"]
