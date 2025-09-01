@@ -1,9 +1,12 @@
-# Configure nixpacks to use Dockerfile
+# Direct Swift build with nixpacks
 [phases.setup]
-nixPkgs = ['docker']
+nixPkgs = ['swift', 'pkg-config', 'openssl']
 
-[phases.build]
-cmds = ['docker build -t app .']
+[phases.install]
+cmds = ['swift package resolve']
+
+[phases.build]  
+cmds = ['swift build --configuration release']
 
 [phases.start]
-cmd = './Gateway serve --env production --hostname 0.0.0.0 --port $PORT'
+cmd = './.build/release/Gateway serve --env production --hostname 0.0.0.0 --port $PORT'
