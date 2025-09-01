@@ -6,8 +6,8 @@ import Shared
 var env = Environment.production
 try LoggingSystem.bootstrap(from: &env)
 
-// 명시적으로 empty arguments로 Application 생성
-let app = Application(env, .init())
+// 명시적으로 shared EventLoopGroup으로 Application 생성
+let app = Application(env, .shared(MultiThreadedEventLoopGroup.singleton))
 defer { app.shutdown() }
 
 // MARK: - Configuration

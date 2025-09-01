@@ -3,7 +3,7 @@ import Vapor
 var env = try Environment.detect()
 try LoggingSystem.bootstrap(from: &env)
 
-let app = Application(env)
+let app = Application(env, .shared(MultiThreadedEventLoopGroup.singleton))
 defer { app.shutdown() }
 
 try configure(app)
