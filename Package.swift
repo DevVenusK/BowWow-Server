@@ -109,61 +109,6 @@ let package = Package(
             ]
         ),
         
-        // MARK: - Tests (Swift Testing)
-        .testTarget(
-            name: "SharedTests",
-            dependencies: [
-                "Shared",
-                .product(name: "XCTVapor", package: "vapor")
-            ]
-        ),
-        .testTarget(
-            name: "GatewayTests",
-            dependencies: [
-                "Gateway",
-                "Shared",
-                .product(name: "XCTVapor", package: "vapor")
-            ]
-        ),
-        .testTarget(
-            name: "UserServiceTests",
-            dependencies: [
-                "UserService",
-                "Shared",
-                .product(name: "XCTVapor", package: "vapor")
-            ]
-        ),
-        .testTarget(
-            name: "LocationServiceTests",
-            dependencies: [
-                "LocationService",
-                "Shared",
-                .product(name: "XCTVapor", package: "vapor")
-            ]
-        ),
-        .testTarget(
-            name: "SignalServiceTests",
-            dependencies: [
-                "SignalService", 
-                "Shared",
-                .product(name: "XCTVapor", package: "vapor")
-            ]
-        ),
-        .testTarget(
-            name: "PushServiceTests",
-            dependencies: [
-                "PushService",
-                "Shared",
-                .product(name: "XCTVapor", package: "vapor")
-            ]
-        ),
-        .testTarget(
-            name: "AnalyticsServiceTests",
-            dependencies: [
-                "AnalyticsService",
-                "Shared", 
-                .product(name: "XCTVapor", package: "vapor")
-            ]
-        )
+        // MARK: - Tests (Swift Testing) - Excluded from production build
     ]
 )

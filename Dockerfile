@@ -44,4 +44,4 @@ COPY --from=build --chown=vapor:vapor /build/.build/release/AnalyticsService ./A
 USER vapor:vapor
 
 # Default command (will be overridden by Railway for each service)
-CMD ["./Gateway", "serve", "--env", "production", "--hostname", "0.0.0.0", "--port", "8000"]
+CMD ./Gateway serve --env production --hostname 0.0.0.0 --port ${PORT:-8000}
