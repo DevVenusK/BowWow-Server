@@ -2,8 +2,10 @@ import Vapor
 import Logging
 import Shared
 
-// 명시적으로 production 환경으로 설정
-var env = Environment.production
+// Railway 명령줄 파싱 에러 완전 회피: 사전 정의된 Environment 사용
+// 명령줄 인자 감지/파싱을 전혀 수행하지 않음
+// CommandLine.arguments[0]은 실행 파일 경로. 나머지 인자는 제거하여 Railway 에러 방지
+var env = Environment(name: "production", arguments: ["Gateway"])
 try LoggingSystem.bootstrap(from: &env)
 
 // 명시적으로 shared EventLoopGroup으로 Application 생성

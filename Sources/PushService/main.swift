@@ -1,6 +1,6 @@
 import Vapor
 
-var env = try Environment.detect()
+var env = Environment(name: "production", arguments: ["PushService"])
 try LoggingSystem.bootstrap(from: &env)
 
 let app = Application(env, .shared(MultiThreadedEventLoopGroup.singleton))
