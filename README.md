@@ -1,4 +1,4 @@
-# BowWow - Location-based Signal Service
+# BowWow-Server
 
 A Swift microservices architecture built with Vapor, featuring real-time location streaming and signal propagation.
 
@@ -40,4 +40,3 @@ swift run Gateway serve --port 8000
 swift run UserService serve --port 8001
 # ... etc
 ```
-
