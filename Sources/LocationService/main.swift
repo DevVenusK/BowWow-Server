@@ -15,5 +15,4 @@ app.http.server.configuration.hostname = "0.0.0.0"
 
 app.logger.info("📍 Location Service starting on port \(port)")
 
-try app.start()
-try app.running?.onStop.wait()
+try app.run()

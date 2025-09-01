@@ -25,6 +25,4 @@ app.http.server.configuration.hostname = "0.0.0.0"
 
 app.logger.info("🚀 Gateway Service starting on port \(port)")
 
-// 서버를 직접 시작하고 실행
-try app.start()
-try app.running?.onStop.wait()
+try app.run()
