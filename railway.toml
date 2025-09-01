@@ -1,6 +1,6 @@
 # Railway 프로젝트 설정
 [build]
-buildCommand = "echo 'Using Docker build'"
+builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
@@ -8,6 +8,7 @@ healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+startCommand = "./Gateway serve --env production --hostname 0.0.0.0 --port $PORT"
 
 # 환경별 설정
 [environments.production]
