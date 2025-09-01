@@ -1,0 +1,90 @@
+{
+  "services": [
+    {
+      "name": "gateway",
+      "port": 8000,
+      "command": "./Gateway serve --env production --hostname 0.0.0.0 --port $PORT",
+      "healthcheck": "/health",
+      "environment": {
+        "VAPOR_ENV": "production",
+        "DATABASE_URL": "${{Postgres.DATABASE_URL}}",
+        "REDIS_URL": "${{Redis.REDIS_URL}}",
+        "USER_SERVICE_URL": "${{UserService.RAILWAY_PUBLIC_DOMAIN}}",
+        "LOCATION_SERVICE_URL": "${{LocationService.RAILWAY_PUBLIC_DOMAIN}}",
+        "SIGNAL_SERVICE_URL": "${{SignalService.RAILWAY_PUBLIC_DOMAIN}}",
+        "PUSH_SERVICE_URL": "${{PushService.RAILWAY_PUBLIC_DOMAIN}}",
+        "ANALYTICS_SERVICE_URL": "${{AnalyticsService.RAILWAY_PUBLIC_DOMAIN}}"
+      }
+    },
+    {
+      "name": "user-service",
+      "port": 8001,
+      "command": "./UserService serve --env production --hostname 0.0.0.0 --port $PORT",
+      "healthcheck": "/health",
+      "environment": {
+        "VAPOR_ENV": "production",
+        "DATABASE_URL": "${{Postgres.DATABASE_URL}}",
+        "REDIS_URL": "${{Redis.REDIS_URL}}"
+      }
+    },
+    {
+      "name": "location-service",  
+      "port": 8002,
+      "command": "./LocationService serve --env production --hostname 0.0.0.0 --port $PORT",
+      "healthcheck": "/health",
+      "environment": {
+        "VAPOR_ENV": "production",
+        "DATABASE_URL": "${{Postgres.DATABASE_URL}}",
+        "REDIS_URL": "${{Redis.REDIS_URL}}",
+        "LOCATION_ENCRYPTION_KEY": "GENERATE_NEW_KEY_HERE"
+      }
+    },
+    {
+      "name": "signal-service",
+      "port": 8003, 
+      "command": "./SignalService serve --env production --hostname 0.0.0.0 --port $PORT",
+      "healthcheck": "/health",
+      "environment": {
+        "VAPOR_ENV": "production",
+        "DATABASE_URL": "${{Postgres.DATABASE_URL}}",
+        "REDIS_URL": "${{Redis.REDIS_URL}}"
+      }
+    },
+    {
+      "name": "push-service",
+      "port": 8004,
+      "command": "./PushService serve --env production --hostname 0.0.0.0 --port $PORT", 
+      "healthcheck": "/health",
+      "environment": {
+        "VAPOR_ENV": "production",
+        "DATABASE_URL": "${{Postgres.DATABASE_URL}}",
+        "REDIS_URL": "${{Redis.REDIS_URL}}",
+        "APNS_KEY_ID": "YOUR_APNS_KEY_ID",
+        "APNS_TEAM_ID": "YOUR_APNS_TEAM_ID",
+        "APNS_KEY_PATH": "YOUR_APNS_KEY_PATH", 
+        "APNS_TOPIC": "com.yourcompany.bowwow"
+      }
+    },
+    {
+      "name": "analytics-service",
+      "port": 8005,
+      "command": "./AnalyticsService serve --env production --hostname 0.0.0.0 --port $PORT",
+      "healthcheck": "/health", 
+      "environment": {
+        "VAPOR_ENV": "production",
+        "DATABASE_URL": "${{Postgres.DATABASE_URL}}",
+        "REDIS_URL": "${{Redis.REDIS_URL}}"
+      }
+    }
+  ],
+  "databases": [
+    {
+      "name": "postgres",
+      "type": "postgresql"
+    },
+    {
+      "name": "redis", 
+      "type": "redis"
+    }
+  ]
+}
