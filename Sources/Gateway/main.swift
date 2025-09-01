@@ -2,10 +2,12 @@ import Vapor
 import Logging
 import Shared
 
-var env = try Environment.detect()
+// 명시적으로 production 환경으로 설정
+var env = Environment.production
 try LoggingSystem.bootstrap(from: &env)
 
-let app = Application(env)
+// 명시적으로 empty arguments로 Application 생성
+let app = Application(env, .init())
 defer { app.shutdown() }
 
 // MARK: - Configuration
