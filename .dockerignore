@@ -30,3 +30,8 @@ Tests/
 # Local development
 .env
 .env.local
+
+# Railway specific
+.railway/
+railway.toml
+nixpacks.toml

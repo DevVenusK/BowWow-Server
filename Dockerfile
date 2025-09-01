@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /build
 
-# Copy Package files
+# Copy Package files (excluding Tests)
 COPY Package.swift Package.resolved ./
 COPY Sources ./Sources
 
