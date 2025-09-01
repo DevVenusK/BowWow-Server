@@ -29,12 +29,8 @@ USER_PID=$!
 sleep 5
 
 echo "🌐 Starting Gateway on port ${PORT:-8000}..."
-# Railway PORT 환경변수 처리
-if [ -n "$PORT" ]; then
-    ./Gateway serve --env production --hostname 0.0.0.0 --port "$PORT" &
-else
-    ./Gateway serve --env production --hostname 0.0.0.0 --port 8000 &
-fi
+# Gateway는 환경변수 PORT를 직접 읽음
+./Gateway &
 GATEWAY_PID=$!
 
 echo "✅ All services started!"
