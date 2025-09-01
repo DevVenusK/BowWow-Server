@@ -1,0 +1,32 @@
+# Build artifacts
+.build/
+*.xcodeproj
+*.xcworkspace
+.swiftpm/
+
+# Dependencies
+Packages/
+Package.pins
+
+# IDE files
+.vscode/
+*.xcuserdatad
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Tests (excluding from production)
+Tests/
+
+# Local development
+.env
+.env.local
