@@ -31,6 +31,24 @@ public func configure(_ app: Application) throws {
     app.migrations.add(CreateSignal())
     app.migrations.add(CreateSignalReceipt())
     
+    // TODO: [REDIS-001] Redis 연결 설정 및 신호 캐싱 구현 필요
+    // TODO: [REDIS-002] 신호 전파 상태를 Redis에 캐싱하여 성능 최적화
+    // TODO: [REDIS-003] 실시간 신호 브로드캐스트를 위한 Redis Pub/Sub 구현
+    // TODO: [REDIS-004] 신호 중복 처리 방지를 위한 Redis 기반 동시성 제어
+    /*
+    예시 Redis 설정:
+    if let redisURL = Environment.get("REDIS_URL") {
+        try app.redis.configure(url: redisURL)
+        
+        // 신호 상태 캐싱 설정
+        app.redis.configuration.pool.connectionRetryTimeout = .seconds(10)
+        app.logger.info("✅ Redis connected for signal caching: \(redisURL)")
+        
+        // 실시간 브로드캐스트를 위한 Pub/Sub 설정
+        // await app.redis.publish("signal:broadcast", to: "signal_channel")
+    }
+    */
+    
     // MARK: - HTTP Client Configuration
     app.http.client.configuration.timeout = HTTPClient.Configuration.Timeout(
         connect: .seconds(5),

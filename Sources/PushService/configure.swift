@@ -20,6 +20,9 @@ public func configure(_ app: Application) throws {
            let teamID = Environment.get("APNS_TEAM_ID"),
            let keyPath = Environment.get("APNS_KEY_PATH") {
             
+            // TODO: [APNS-001] 실제 VaporAPNS 라이브러리 초기화 구현 필요
+            // TODO: [APNS-002] APNS 인증키 파일(.p8) 업로드 및 경로 검증 추가
+            // TODO: [APNS-003] 실제 푸시 알림 전송 로직 구현 (현재는 설정 저장만)
             // VaporAPNS 설정을 위한 정보 저장 (실제 구현 시 사용)
             app.storage[APNSConfigKey.self] = APNSConfig(
                 keyID: keyID,

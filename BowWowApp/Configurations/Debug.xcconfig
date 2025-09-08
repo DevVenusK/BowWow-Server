@@ -1,0 +1,63 @@
+// Debug Configuration for BowWow iOS App
+
+// Build Settings
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) DEBUG
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) DEBUG=1
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+ENABLE_TESTABILITY = YES
+
+// Code Signing
+CODE_SIGN_STYLE = Automatic
+CODE_SIGN_IDENTITY = iPhone Developer
+PROVISIONING_PROFILE_SPECIFIER = 
+
+// Bundle Configuration
+PRODUCT_BUNDLE_IDENTIFIER = com.bowwow.app.debug
+PRODUCT_NAME = BowWow-Dev
+DISPLAY_NAME = BowWow Dev
+
+// API Configuration
+API_BASE_URL = http://localhost:8000/api
+
+// App Transport Security (for local development)
+NSAppTransportSecurity = {
+    NSAllowsArbitraryLoads = YES;
+    NSExceptionDomains = {
+        localhost = {
+            NSExceptionAllowsInsecureHTTPLoads = YES;
+        };
+    };
+}
+
+// Development Team (update with your team ID)
+DEVELOPMENT_TEAM = YOUR_TEAM_ID_HERE
+
+// Debugging
+DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
+ONLY_ACTIVE_ARCH = YES
+ENABLE_NS_ASSERTIONS = YES
+ENABLE_STRICT_OBJC_MSGSEND = YES
+MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE
+GCC_DYNAMIC_NO_PIC = NO
+GCC_NO_COMMON_BLOCKS = YES
+GCC_OPTIMIZATION_LEVEL = 0
+GCC_WARN_64_TO_32_BIT_CONVERSION = YES
+GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR
+GCC_WARN_UNDECLARED_SELECTOR = YES
+GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE
+GCC_WARN_UNUSED_FUNCTION = YES
+GCC_WARN_UNUSED_VARIABLE = YES
+
+// Swift Compiler
+SWIFT_COMPILATION_MODE = singlefile
+SWIFT_VERSION = 5.9
+
+// Deployment
+IPHONEOS_DEPLOYMENT_TARGET = 18.0
+TARGETED_DEVICE_FAMILY = 1,2
+
+// Other Linker Flags
+OTHER_LDFLAGS = $(inherited)
+
+// Bitcode
+ENABLE_BITCODE = NO

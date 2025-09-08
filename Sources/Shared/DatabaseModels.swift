@@ -67,12 +67,18 @@ public final class UserLocation: Model, Content {
     @Field(key: "encrypted_longitude")
     public var encryptedLongitude: String
     
+    // TODO: [POSTGIS-001] PostGIS POINT 타입으로 변경하여 공간 인덱스 최적화 필요
+    // TODO: [POSTGIS-002] ST_Distance, ST_DWithin 등 PostGIS 함수 활용 구현
+    // TODO: [POSTGIS-003] 지리공간 인덱스 (GIST) 생성 SQL 추가 필요
     // PostGIS 공간 인덱스를 위한 필드 (복호화된 값은 임시로만 사용)
     @Field(key: "latitude")
     public var latitude: Double
     
     @Field(key: "longitude")
     public var longitude: Double
+    
+    // TODO: [POSTGIS-004] 향후 PostGIS GEOMETRY(POINT, 4326) 타입으로 교체 예정:
+    // @Field(key: "location_point") public var locationPoint: PostGISGeometry
     
     @Field(key: "expires_at")
     public var expiresAt: Date?

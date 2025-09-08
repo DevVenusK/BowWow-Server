@@ -39,7 +39,7 @@ public struct EncryptedLocation: Codable, Content {
 /// 거리 단위 설정
 public enum DistanceUnit: String, Codable, CaseIterable, Content {
     case mile = "mile"
-    case kilometer = "km"
+    case kilometer = "kilometer"
     
     public var maxDistance: Int {
         switch self {

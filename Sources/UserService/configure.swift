@@ -30,6 +30,18 @@ public func configure(_ app: Application) throws {
     // MARK: - Migrations
     app.migrations.add(CreateUser())
     
+    // TODO: [REDIS-001] Redis 캐시 설정 및 연결 구현 필요
+    // TODO: [REDIS-002] REDIS_URL 환경 변수 처리 및 연결 풀 설정
+    // TODO: [REDIS-003] 사용자 정보 캐싱 로직 구현 (세션, 프로필)
+    // TODO: [REDIS-004] Device Token 캐싱으로 성능 최적화
+    /*
+    예시 Redis 설정:
+    if let redisURL = Environment.get("REDIS_URL") {
+        try app.redis.configure(url: redisURL)
+        app.logger.info("✅ Redis connected: \(redisURL)")
+    }
+    */
+    
     // MARK: - HTTP Client Configuration
     app.http.client.configuration.timeout = HTTPClient.Configuration.Timeout(
         connect: .seconds(5),

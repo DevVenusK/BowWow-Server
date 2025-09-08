@@ -62,7 +62,7 @@ func sendSignalNotification(req: Request) async throws -> Response {
         req.logger.info("   Topic: \(apnsConfig.topic)")
         req.logger.info("   Custom Data: signalID=\(payload.signalID.value)")
         
-        // 실제 VaporAPNS 구현 코드는 다음과 같이 작성:
+        // TODO: [APNS-004] 실제 VaporAPNS 구현 코드 활성화 필요:
         /*
         try await req.apns.send(
             APNSMessage(

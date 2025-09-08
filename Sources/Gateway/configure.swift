@@ -1,6 +1,7 @@
 import Vapor
 import Fluent
 import FluentPostgresDriver
+import PostgresNIO
 import Shared
 
 public func configure(_ app: Application) throws {
@@ -14,9 +15,28 @@ public func configure(_ app: Application) throws {
     
     app.middleware.use(ErrorMiddleware.default(environment: app.environment))
     
+    // TODO: [AUTH-001] JWT 인증 미들웨어 추가 필요
+    // TODO: [AUTH-002] API Key 기반 서비스 간 인증 구현 필요
+    // TODO: [AUTH-003] Rate limiting 미들웨어 추가 필요
+    // TODO: [AUTH-004] JWT_SECRET 환경 변수 설정 및 검증 추가
+    /*
+    예시 JWT 미들웨어 구현:
+    if let jwtSecret = Environment.get("JWT_SECRET") {
+        app.jwt.signers.use(.hs256(key: jwtSecret))
+        let protected = app.grouped(JWTBearerAuthenticator())
+        // 보호된 라우트에 사용
+    }
+    */
+    
     // MARK: - Database Configuration
     if let databaseURL = Environment.get("DATABASE_URL") {
-        try app.databases.use(.postgres(url: databaseURL), as: .psql)
+        // Railway PostgreSQL requires SSL - append sslmode if not present
+        let urlWithSSL = databaseURL.contains("sslmode=") ? databaseURL : "\(databaseURL)?sslmode=require"
+        
+        var config = try SQLPostgresConfiguration(url: urlWithSSL)
+        config.coreConfiguration.tls.certificateVerification = .none  // Disable certificate verification for Railway
+        
+        app.databases.use(.postgres(configuration: config), as: .psql)
     } else {
         app.databases.use(.postgres(
             hostname: Environment.get("DATABASE_HOST") ?? "localhost",

@@ -35,12 +35,16 @@ func updateLocation(req: Request) async throws -> Response {
         throw Abort(.notFound, reason: "User not found")
     }
     
+    // TODO: [CRYPTO-001] 프로덕션 환경용 안전한 암호화 키 관리 시스템 구현 필요
+    // TODO: [CRYPTO-002] LOCATION_ENCRYPTION_KEY 환경 변수 설정 및 검증 추가
+    // TODO: [CRYPTO-003] 키 순환(Key Rotation) 정책 구현 필요
+    // TODO: [CRYPTO-004] AWS KMS, HashiCorp Vault 등 외부 키 관리 서비스 연동 고려
     // 위치 데이터 암호화 - AES-GCM 256비트 사용
     let encryptionKey = getOrCreateEncryptionKey(from: req.application.environment)
     let encryptedLat = try encryptLocationValue(locationRequest.location.latitude.value, key: encryptionKey)
     let encryptedLng = try encryptLocationValue(locationRequest.location.longitude.value, key: encryptionKey)
     
-    req.logger.info("🔐 Location encrypted for user: \\(locationRequest.userID.value)")
+    req.logger.info("🔐 Location encrypted for user: \(locationRequest.userID.value)")
     
     // 기존 위치 삭제 (24시간 만료 정책)
     try await UserLocation.query(on: req.db)
@@ -72,7 +76,7 @@ func updateLocation(req: Request) async throws -> Response {
     
     await LocationStreamManager.shared.broadcastLocationUpdate(broadcast)
     
-    req.logger.info("Location updated and broadcasted for user: \\(locationRequest.userID.value)")
+    req.logger.info("Location updated for user: \(locationRequest.userID.value)")
     return Response(status: .ok)
 }
 

@@ -1,0 +1,230 @@
+# BowWow Production Docker Compose Configuration
+# TODO: [DEPLOY-001] 프로덕션 환경용 Docker Compose 설정 완성 필요
+# TODO: [DEPLOY-002] 보안 강화를 위한 네트워크 분리 및 방화벽 규칙 적용
+# TODO: [DEPLOY-003] 로드 밸런서 및 고가용성 설정 추가
+# TODO: [DEPLOY-004] 자동 백업 및 모니터링 시스템 연동
+
+version: '3.8'
+
+services:
+  # TODO: [DB-001] PostgreSQL + PostGIS 프로덕션 설정
+  postgres:
+    image: postgis/postgis:15-3.3
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-bowwow}
+      POSTGRES_USER: ${DATABASE_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/setup-database.sh:/docker-entrypoint-initdb.d/01-setup.sh
+      - ./scripts/setup-postgis-indexes.sql:/docker-entrypoint-initdb.d/02-indexes.sql
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    restart: unless-stopped
+    networks:
+      - bowwow-network
+    # TODO: [SECURITY-001] 프로덕션용 PostgreSQL 보안 설정
+    # - SSL 인증서 설정
+    # - 접근 권한 최소화 (pg_hba.conf)
+    # - 정기 백업 자동화
+
+  # TODO: [CACHE-001] Redis Cluster 프로덕션 설정  
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    restart: unless-stopped
+    networks:
+      - bowwow-network
+    # TODO: [CACHE-002] Redis 클러스터 및 센티넬 설정
+    # TODO: [CACHE-003] Redis 메모리 최적화 및 만료 정책
+
+  # TODO: [GATEWAY-001] API Gateway 프로덕션 배포
+  gateway:
+    build: 
+      context: .
+      dockerfile: Dockerfile.gateway
+    environment:
+      - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - API_KEY=${API_KEY}
+      - GATEWAY_PORT=8000
+      # TODO: [ENV-001] 모든 서비스 URL 환경 변수 설정
+      - USER_SERVICE_URL=http://user-service:8001
+      - LOCATION_SERVICE_URL=http://location-service:8002
+      - SIGNAL_SERVICE_URL=http://signal-service:8003
+      - PUSH_SERVICE_URL=http://push-service:8004
+      - ANALYTICS_SERVICE_URL=http://analytics-service:8005
+    ports:
+      - "${GATEWAY_PORT:-8000}:8000"
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - bowwow-network
+    # TODO: [SCALE-001] 수평 확장을 위한 로드 밸런서 설정
+
+  # TODO: [USER-001] User Service 프로덕션 배포
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.user-service
+    environment:
+      - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - USER_SERVICE_PORT=8001
+    ports:
+      - "${USER_SERVICE_PORT:-8001}:8001"
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - bowwow-network
+
+  # TODO: [LOCATION-001] Location Service 프로덕션 배포  
+  location-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.location-service
+    environment:
+      - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}
+      - LOCATION_ENCRYPTION_KEY=${LOCATION_ENCRYPTION_KEY}
+      - LOCATION_SERVICE_PORT=8002
+    ports:
+      - "${LOCATION_SERVICE_PORT:-8002}:8002"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - bowwow-network
+
+  # TODO: [SIGNAL-001] Signal Service 프로덕션 배포
+  signal-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.signal-service
+    environment:
+      - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - SIGNAL_SERVICE_PORT=8003
+    ports:
+      - "${SIGNAL_SERVICE_PORT:-8003}:8003"
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - bowwow-network
+
+  # TODO: [PUSH-001] Push Service 프로덕션 배포
+  push-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.push-service
+    environment:
+      - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}
+      - APNS_KEY_ID=${APNS_KEY_ID}
+      - APNS_TEAM_ID=${APNS_TEAM_ID}
+      - APNS_KEY_PATH=${APNS_KEY_PATH}
+      - APNS_TOPIC=${APNS_TOPIC}
+      - PUSH_SERVICE_PORT=8004
+    ports:
+      - "${PUSH_SERVICE_PORT:-8004}:8004"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - bowwow-network
+    # TODO: [APNS-001] APNS 인증키 파일 볼륨 마운트 설정
+    volumes:
+      - ${APNS_KEY_PATH}:/app/apns-key.p8:ro
+
+  # TODO: [ANALYTICS-001] Analytics Service 프로덕션 배포
+  analytics-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.analytics-service
+    environment:
+      - DATABASE_URL=postgresql://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME}
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - ANALYTICS_SERVICE_PORT=8005
+    ports:
+      - "${ANALYTICS_SERVICE_PORT:-8005}:8005"
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - bowwow-network
+
+  # TODO: [MONITOR-001] 모니터링 시스템 (Prometheus + Grafana)
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   volumes:
+  #     - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus_data:/prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   networks:
+  #     - bowwow-network
+
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #   ports:
+  #     - "3000:3000"
+  #   networks:
+  #     - bowwow-network
+
+  # TODO: [LOG-001] 로그 수집 시스템 (ELK Stack)
+  # elasticsearch:
+  #   image: elasticsearch:8.8.0
+  #   environment:
+  #     - discovery.type=single-node
+  #     - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+  #   volumes:
+  #     - elasticsearch_data:/usr/share/elasticsearch/data
+  #   ports:
+  #     - "9200:9200"
+  #   networks:
+  #     - bowwow-network
+
+  # TODO: [REVERSE-PROXY-001] Nginx 리버스 프록시 설정
+  # nginx:
+  #   image: nginx:alpine
+  #   volumes:
+  #     - ./config/nginx.conf:/etc/nginx/nginx.conf
+  #     - ./ssl:/etc/nginx/ssl
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   depends_on:
+  #     - gateway
+  #   restart: unless-stopped
+  #   networks:
+  #     - bowwow-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  # prometheus_data:
+  # grafana_data:
+  # elasticsearch_data:
+
+networks:
+  bowwow-network:
+    driver: bridge
+    # TODO: [NETWORK-001] 프로덕션 네트워크 보안 설정
+    # - 서브넷 분리
+    # - 내부 서비스 간 통신만 허용
+    # - 외부 접근 제한

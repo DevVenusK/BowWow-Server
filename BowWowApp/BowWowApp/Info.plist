@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>ko</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.bowwow.app</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>BowWow</string>
+    <key>CFBundleDisplayName</key>
+    <string>BowWow</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    
+    <!-- 위치 권한 설정 -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>BowWow는 주변 사용자를 찾고 신호를 주고받기 위해 위치 정보가 필요합니다.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>BowWow는 백그라운드에서도 신호를 주고받기 위해 위치 정보가 필요합니다.</string>
+    
+    <!-- 푸시 알림 설정 -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>remote-notification</string>
+        <string>background-processing</string>
+    </array>
+    
+    <!-- 네트워크 보안 설정 (개발용) -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>localhost</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+            </dict>
+        </dict>
+    </dict>
+    
+    <!-- 앱 아이콘 설정 -->
+    <key>CFBundleIcons</key>
+    <dict>
+        <key>CFBundlePrimaryIcon</key>
+        <dict>
+            <key>CFBundleIconFiles</key>
+            <array>
+                <string>AppIcon</string>
+            </array>
+            <key>CFBundleIconName</key>
+            <string>AppIcon</string>
+        </dict>
+    </dict>
+    
+    <!-- 지원 인터페이스 -->
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+    </array>
+    
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    
+    <!-- 상태바 스타일 -->
+    <key>UIStatusBarStyle</key>
+    <string>UIStatusBarStyleDefault</string>
+    
+    <!-- iOS 최소 버전 -->
+    <key>MinimumOSVersion</key>
+    <string>18.0</string>
+    
+    <!-- SwiftUI 설정 -->
+    <key>UILaunchScreen</key>
+    <dict>
+        <key>UIImageName</key>
+        <string>LaunchScreen</string>
+    </dict>
+</dict>
+</plist>
