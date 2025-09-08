@@ -30,11 +30,9 @@ public func configure(_ app: Application) throws {
     
     // MARK: - Database Configuration
     if let databaseURL = Environment.get("DATABASE_URL") {
-        // Railway PostgreSQL requires SSL - append sslmode if not present
-        let urlWithSSL = databaseURL.contains("sslmode=") ? databaseURL : "\(databaseURL)?sslmode=require"
-        
-        var config = try SQLPostgresConfiguration(url: urlWithSSL)
-        config.coreConfiguration.tls.certificateVerification = .none  // Disable certificate verification for Railway
+        // Railway PostgreSQL - use URL configuration with TLS disabled for Railway compatibility
+        var config = try SQLPostgresConfiguration(url: databaseURL)
+        config.coreConfiguration.tls = .disable  // Disable TLS verification for Railway
         
         app.databases.use(.postgres(configuration: config), as: .psql)
     } else {
