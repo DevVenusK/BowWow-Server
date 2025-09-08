@@ -16,8 +16,14 @@ defer { app.shutdown() }
 try configure(app)
 
 // MARK: - Database Migrations
-try app.autoMigrate().wait()
-app.logger.info("✅ Database migrations completed")
+app.logger.info("🚀 Starting database migrations...")
+do {
+    try app.autoMigrate().wait()
+    app.logger.info("✅ Database migrations completed successfully")
+} catch {
+    app.logger.error("❌ Database migration failed: \(error)")
+    throw error
+}
 
 // MARK: - Routes
 try routes(app)
