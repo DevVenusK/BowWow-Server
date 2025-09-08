@@ -15,6 +15,10 @@ defer { app.shutdown() }
 // MARK: - Configuration
 try configure(app)
 
+// MARK: - Database Migrations
+try app.autoMigrate().wait()
+app.logger.info("✅ Database migrations completed")
+
 // MARK: - Routes
 try routes(app)
 
