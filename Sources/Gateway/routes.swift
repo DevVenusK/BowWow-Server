@@ -13,6 +13,19 @@ public func routes(_ app: Application) throws {
         )
     }
     
+    // MARK: - Debug Routes (temporary)
+    app.get("debug", "user-service") { req -> String in
+        let serviceURLs = req.application.storage[ServiceURLsKey.self]!
+        let userServiceURL = "\(serviceURLs.userService)/health"
+        
+        do {
+            let response = try await req.client.get(URI(string: userServiceURL))
+            return "UserService Status: \(response.status) - Body: \(response.body?.getString(at: 0, length: response.body?.readableBytes ?? 0) ?? "no body")"
+        } catch {
+            return "UserService Error: \(error)"
+        }
+    }
+    
     // MARK: - API v1 Routes
     let api = app.grouped("api", "v1")
     
@@ -38,23 +51,35 @@ public func routes(_ app: Application) throws {
 
 /// 사용자 등록
 func registerUser(req: Request) async throws -> CreateUserResponse {
+    req.logger.info("🔄 Processing user registration request")
+    
     let createUserRequest = try req.content.decode(CreateUserRequest.self)
+    req.logger.info("📥 Decoded request: \(createUserRequest)")
     
     // Validation
     let validationResult = validateUser(createUserRequest)
     let validatedRequest = try validationResult.get()
+    req.logger.info("✅ Validation passed")
     
     // Forward to User Service
     let serviceURLs = req.application.storage[ServiceURLsKey.self]!
     let userServiceURL = "\(serviceURLs.userService)/users/register"
+    req.logger.info("🎯 Forwarding to UserService at: \(userServiceURL)")
     
-    return try await forwardRequest(
-        to: userServiceURL,
-        method: .POST,
-        body: validatedRequest,
-        as: CreateUserResponse.self,
-        on: req
-    )
+    do {
+        let result = try await forwardRequest(
+            to: userServiceURL,
+            method: .POST,
+            body: validatedRequest,
+            as: CreateUserResponse.self,
+            on: req
+        )
+        req.logger.info("✅ User registration successful")
+        return result
+    } catch {
+        req.logger.error("❌ User registration failed: \(error)")
+        throw error
+    }
 }
 
 /// 사용자 설정 업데이트
