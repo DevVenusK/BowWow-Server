@@ -1,4 +1,5 @@
 import Vapor
+import Fluent
 import Shared
 
 public func routes(_ app: Application) throws {
@@ -26,6 +27,15 @@ public func routes(_ app: Application) throws {
         }
     }
     
+    app.get("debug", "database") { req -> String in
+        do {
+            let count = try await User.query(on: req.db).count()
+            return "Database Status: OK - User count: \(count)"
+        } catch {
+            return "Database Error: \(error)"
+        }
+    }
+    
     // MARK: - API v1 Routes
     let api = app.grouped("api", "v1")
     
@@ -49,9 +59,9 @@ public func routes(_ app: Application) throws {
 
 // MARK: - Route Handlers
 
-/// 사용자 등록
+/// 사용자 등록 - Direct Database Access (Temporary Fix)
 func registerUser(req: Request) async throws -> CreateUserResponse {
-    req.logger.info("🔄 Processing user registration request")
+    req.logger.info("🔄 Processing user registration request directly in Gateway")
     
     let createUserRequest = try req.content.decode(CreateUserRequest.self)
     req.logger.info("📥 Decoded request: \(createUserRequest)")
@@ -61,25 +71,37 @@ func registerUser(req: Request) async throws -> CreateUserResponse {
     let validatedRequest = try validationResult.get()
     req.logger.info("✅ Validation passed")
     
-    // Forward to User Service
-    let serviceURLs = req.application.storage[ServiceURLsKey.self]!
-    let userServiceURL = "\(serviceURLs.userService)/users/register"
-    req.logger.info("🎯 Forwarding to UserService at: \(userServiceURL)")
+    // Direct database access instead of forwarding to UserService
+    req.logger.info("🎯 Processing user registration directly in Gateway")
     
-    do {
-        let result = try await forwardRequest(
-            to: userServiceURL,
-            method: .POST,
-            body: validatedRequest,
-            as: CreateUserResponse.self,
-            on: req
+    // Check for existing user (prevent duplicate deviceToken)
+    if let existingUser = try await User.query(on: req.db)
+        .filter(\.$deviceToken == validatedRequest.deviceToken.value)
+        .first() {
+        req.logger.info("👤 Found existing user, returning existing data")
+        return CreateUserResponse(
+            userID: existingUser.toUserID(),
+            settings: existingUser.toSettings(),
+            createdAt: existingUser.createdAt
         )
-        req.logger.info("✅ User registration successful")
-        return result
-    } catch {
-        req.logger.error("❌ User registration failed: \(error)")
-        throw error
     }
+    
+    // Create new user
+    let settings = validatedRequest.settings ?? UserSettings()
+    let user = User(
+        deviceToken: validatedRequest.deviceToken.value,
+        isOffline: settings.isOffline,
+        distanceUnit: settings.distanceUnit
+    )
+    
+    try await user.save(on: req.db)
+    req.logger.info("✅ User created successfully with ID: \(user.id?.uuidString ?? "unknown")")
+    
+    return CreateUserResponse(
+        userID: user.toUserID(),
+        settings: settings,
+        createdAt: user.createdAt
+    )
 }
 
 /// 사용자 설정 업데이트
