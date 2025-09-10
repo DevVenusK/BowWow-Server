@@ -132,17 +132,28 @@ public struct ReceivedSignal: Codable, Identifiable, Hashable, Sendable {
     }
 }
 
-/// 신호 응답 정보
+/// 신호 응답 정보 (서버와 동일한 구조)
 public struct SignalResponse: Codable, Hashable, Sendable {
     public let signalID: UUID
-    public let success: Bool
-    public let message: String?
+    public let senderID: UserID
+    public let sentAt: Date
+    public let maxDistance: Int
+    public let status: SignalStatus
     
-    public init(signalID: UUID, success: Bool, message: String? = nil) {
+    public init(signalID: UUID, senderID: UserID, sentAt: Date, maxDistance: Int, status: SignalStatus) {
         self.signalID = signalID
-        self.success = success
-        self.message = message
+        self.senderID = senderID
+        self.sentAt = sentAt
+        self.maxDistance = maxDistance
+        self.status = status
     }
+}
+
+/// 신호 상태
+public enum SignalStatus: String, Codable, CaseIterable, Sendable {
+    case pending = "pending"
+    case active = "active"
+    case expired = "expired"
 }
 
 /// 위치 업데이트 요청
