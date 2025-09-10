@@ -102,12 +102,18 @@ final class AppState {
     // MARK: - Signal Management
     
     func sendSignal(from location: StrongLocation, maxDistance: Int = 10) async {
-        guard let user = currentUser else { return }
+        guard let user = currentUser else { 
+            print("❌ AppState.sendSignal: 사용자 정보가 없음")
+            return 
+        }
+        
+        print("🚀 AppState.sendSignal 시작 - 사용자: \(user.id?.uuidString ?? "unknown")")
         
         self.isSendingSignal = true
         self.lastError = nil
         
         do {
+            print("📡 APIService.sendSignal 호출 중...")
             let signalResponse = try await APIService.shared.sendSignal(
                 senderID: user.toUserID(),
                 location: location,
@@ -118,6 +124,11 @@ final class AppState {
             self.lastError = AppError.signalError("신호 전송에 실패했습니다: \(error.localizedDescription)")
             self.showingError = true
             print("❌ 신호 전송 실패: \(error)")
+            
+            // 구체적인 에러 정보 출력
+            if let apiError = error as? APIError {
+                print("❌ API 에러 세부사항: \(apiError.localizedDescription)")
+            }
         }
         
         self.isSendingSignal = false
@@ -164,6 +175,7 @@ final class AppState {
     // MARK: - Connection Status
     
     func updateConnectionStatus(_ isConnected: Bool) {
+        print("🔄 연결 상태 업데이트: \(isConnected ? "연결됨" : "연결 안됨")")
         self.isConnectedToServer = isConnected
     }
     

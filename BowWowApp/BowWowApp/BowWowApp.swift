@@ -32,6 +32,37 @@ struct BowWowApp: App {
         // 푸시 알림 권한 요청
         notificationManager.requestNotificationPermission()
         
+        // 서버 연결 상태 확인 시작
+        APIService.shared.startPeriodicHealthCheck()
+        
+        // 초기 연결 상태 확인
+        Task {
+            print("🚀 앱 시작 - 초기 서버 연결 상태 확인 중...")
+            let isConnected = await APIService.shared.checkServerConnection()
+            await MainActor.run {
+                print("📱 메인 스레드에서 연결 상태 업데이트: \(isConnected)")
+                appState.updateConnectionStatus(isConnected)
+            }
+        }
+        
+        // 연결 상태 업데이트 리스너 등록
+        print("👂 NotificationCenter 리스너 등록")
+        NotificationCenter.default.addObserver(
+            forName: .serverConnectionStatusChanged,
+            object: nil,
+            queue: .main
+        ) { notification in
+            print("📬 NotificationCenter에서 연결 상태 알림 수신")
+            if let isConnected = notification.userInfo?["isConnected"] as? Bool {
+                print("📩 알림 내용: isConnected = \(isConnected)")
+                Task { @MainActor in
+                    appState.updateConnectionStatus(isConnected)
+                }
+            } else {
+                print("❌ 알림에서 isConnected 값을 찾을 수 없음")
+            }
+        }
+        
         // 디바이스 토큰으로 사용자 등록
         Task {
             await registerUser()

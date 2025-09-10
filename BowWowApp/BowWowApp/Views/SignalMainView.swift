@@ -286,15 +286,26 @@ struct SignalMainView: View {
     private func sendSignal() {
         print("🔥 sendSignal 함수 호출됨")
         print("🔥 서버 연결: \(appState.isConnectedToServer)")
-        print("🔥 사용자: \(appState.currentUser != nil)")
+        print("🔥 사용자: \(appState.currentUser != nil ? "있음" : "없음")")
         print("🔥 신호 전송 중: \(appState.isSendingSignal)")
-        print("🔥 현재 위치: \(locationManager.currentLocation != nil)")
+        print("🔥 현재 위치: \(locationManager.currentLocation != nil ? "있음" : "없음")")
+        
+        guard appState.isConnectedToServer else {
+            print("❌ 서버에 연결되지 않음")
+            return
+        }
+        
+        guard appState.currentUser != nil else {
+            print("❌ 사용자 정보가 없음")
+            return
+        }
         
         guard let currentLocation = locationManager.currentLocation else {
             print("❌ 현재 위치가 없음")
             return
         }
         
+        print("✅ 신호 전송 시작 - 위치: \(currentLocation.coordinate.latitude), \(currentLocation.coordinate.longitude), 거리: \(Int(signalDistance))km")
         showingSignalConfirmation = true
         
         Task {
@@ -304,6 +315,7 @@ struct SignalMainView: View {
                     lng: currentLocation.coordinate.longitude
                 )
                 
+                print("🎯 AppState.sendSignal 호출 중...")
                 await appState.sendSignal(
                     from: strongLocation,
                     maxDistance: Int(signalDistance)

@@ -35,11 +35,19 @@ final class APIService {
     func registerUser(deviceToken: String) async throws -> User {
         let request = UserRegistrationRequest(deviceToken: deviceToken)
         
-        return try await performRequest(
+        let response = try await performRequest(
             method: .post,
             path: "/users/register",
             body: request,
-            responseType: User.self
+            responseType: ServerUserResponse.self
+        )
+        
+        // 서버 응답을 iOS 앱 모델로 변환
+        return User(
+            id: response.userID,
+            deviceToken: deviceToken, // 클라이언트에서 보관
+            settings: response.settings,
+            createdAt: response.createdAt
         )
     }
     
@@ -92,12 +100,20 @@ final class APIService {
     
     /// 신호 전송
     func sendSignal(senderID: UserID, location: StrongLocation, maxDistance: Int) async throws -> SignalResponse {
-        let request = SendSignalRequest(
+        let request = ServerSignalRequest(
             senderID: senderID,
-            latitude: location.latitude.value,
-            longitude: location.longitude.value,
+            location: location,
             maxDistance: maxDistance
         )
+        
+        // 디버깅용: 전송할 데이터 로깅
+        do {
+            let jsonData = try jsonEncoder.encode(request)
+            let jsonString = String(data: jsonData, encoding: .utf8) ?? "JSON 변환 실패"
+            print("📤 신호 전송 데이터: \(jsonString)")
+        } catch {
+            print("❌ JSON 인코딩 실패: \(error)")
+        }
         
         return try await performRequest(
             method: .post,
@@ -235,16 +251,31 @@ struct UserRegistrationRequest: Codable {
     let deviceToken: String
 }
 
+// MARK: - Server Response DTOs
+
+/// 서버에서 오는 사용자 등록 응답 (CreateUserResponse와 매핑)
+struct ServerUserResponse: Codable {
+    let userID: UUID
+    let settings: UserSettings
+    let createdAt: Date
+}
+
 struct UserSettingsUpdateRequest: Codable {
     let userID: UserID
     let settings: UserSettings
 }
 
-struct SendSignalRequest: Codable {
+/// 서버의 SignalRequest와 정확히 일치하는 모델
+struct ServerSignalRequest: Codable {
     let senderID: UserID
-    let latitude: Double
-    let longitude: Double
-    let maxDistance: Int
+    let location: StrongLocation
+    let maxDistance: Double?  // ValidatedDistance는 Double로 직렬화됨
+    
+    init(senderID: UserID, location: StrongLocation, maxDistance: Int) {
+        self.senderID = senderID
+        self.location = location
+        self.maxDistance = maxDistance > 0 ? Double(maxDistance) : nil
+    }
 }
 
 struct SignalResponseRequest: Codable {
@@ -354,15 +385,22 @@ enum APIError: LocalizedError, Equatable {
 extension APIService {
     /// 네트워크 연결 상태 확인
     func checkServerConnection() async -> Bool {
+        // health 엔드포인트는 API v1 경로가 아닌 루트에 있음
+        let healthURL = "https://bowwow-server-production.up.railway.app/health"
+        
         do {
-            let url = URL(string: baseURL + "/health")!
+            print("🔍 서버 연결 확인 시도: \(healthURL)")
+            let url = URL(string: healthURL)!
             let (_, response) = try await URLSession.shared.data(from: url)
             
             guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ 응답이 HTTPURLResponse가 아님")
                 return false
             }
             
-            return 200...299 ~= httpResponse.statusCode
+            let isConnected = 200...299 ~= httpResponse.statusCode
+            print(isConnected ? "✅ 서버 연결 성공" : "❌ 서버 응답 오류: \(httpResponse.statusCode)")
+            return isConnected
         } catch {
             print("❌ 서버 연결 확인 실패: \(error)")
             return false
@@ -371,11 +409,15 @@ extension APIService {
     
     /// 정기적인 서버 상태 확인
     func startPeriodicHealthCheck(interval: TimeInterval = 30.0) {
+        print("⏰ 정기적 서버 상태 확인 시작 (간격: \(interval)초)")
+        
         Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
             Task {
+                print("⏰ 정기 서버 상태 확인 실행")
                 let isConnected = await self.checkServerConnection()
                 
                 await MainActor.run {
+                    print("📡 정기 확인 결과를 NotificationCenter로 전송: \(isConnected)")
                     NotificationCenter.default.post(
                         name: .serverConnectionStatusChanged,
                         object: nil,

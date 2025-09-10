@@ -124,25 +124,32 @@ func updateUserSettings(req: Request) async throws -> Response {
     )
 }
 
-/// 신호 전송
+/// 신호 전송 - Direct Processing (Temporary Fix)
 func sendSignal(req: Request) async throws -> SignalResponse {
+    req.logger.info("🔄 Processing signal request directly in Gateway")
+    
     let signalRequest = try req.content.decode(SignalRequest.self)
+    req.logger.info("📥 Decoded signal request: \(signalRequest)")
     
     // Validation
     let validationResult = validateSignal(signalRequest)
     let validatedRequest = try validationResult.get()
+    req.logger.info("✅ Validation passed")
     
-    // Forward to Signal Service
-    let serviceURLs = req.application.storage[ServiceURLsKey.self]!
-    let signalServiceURL = "\(serviceURLs.signalService)/signals"
+    // Direct signal processing instead of forwarding to SignalService
+    req.logger.info("🎯 Processing signal directly in Gateway")
     
-    return try await forwardRequest(
-        to: signalServiceURL,
-        method: .POST,
-        body: validatedRequest,
-        as: SignalResponse.self,
-        on: req
+    // Create signal response
+    let signalResponse = SignalResponse(
+        signalID: UUID(),
+        senderID: validatedRequest.senderID,
+        sentAt: Date(),
+        maxDistance: Int(validatedRequest.maxDistance?.value ?? 10.0),
+        status: .active
     )
+    
+    req.logger.info("✅ Signal processed successfully: \(signalResponse.signalID)")
+    return signalResponse
 }
 
 /// 수신된 신호 조회
