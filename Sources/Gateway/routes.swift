@@ -57,6 +57,113 @@ public func routes(_ app: Application) throws {
     app.logger.info("✅ Gateway routes configured")
 }
 
+// MARK: - Signal Processing Helpers
+
+/// 신호를 받을 수 있는 주변 사용자들을 찾고 SignalReceipt 생성
+private func processSignalReceipts(signal: Signal, on req: Request) async {
+    do {
+        req.logger.info("🔍 Finding nearby users for signal: \(signal.id?.uuidString ?? "unknown")")
+        
+        // 신호 범위 내의 사용자들을 찾음 (간단한 거리 계산)
+        let maxDistanceKm = Double(signal.maxDistance)
+        
+        // TODO: [POSTGIS-005] PostGIS ST_DWithin 함수로 최적화 필요
+        let nearbyLocations = try await UserLocation.query(on: req.db)
+            .filter(\.$expiresAt > Date()) // 만료되지 않은 위치만
+            .all()
+        
+        var receiptsCreated = 0
+        
+        for location in nearbyLocations {
+            // 발신자 본인은 제외
+            if location.$user.id == signal.$sender.id {
+                continue
+            }
+            
+            // 간단한 거리 계산 (하버사인 공식)
+            let distance = calculateDistance(
+                lat1: signal.latitude,
+                lng1: signal.longitude,
+                lat2: location.latitude,
+                lng2: location.longitude
+            )
+            
+            if distance <= maxDistanceKm {
+                // 방향 계산
+                let direction = calculateDirection(
+                    fromLat: location.latitude,
+                    fromLng: location.longitude,
+                    toLat: signal.latitude,
+                    toLng: signal.longitude
+                )
+                
+                // SignalReceipt 생성
+                let receipt = SignalReceipt(
+                    signalID: signal.id ?? UUID(),
+                    receiverID: UserID(location.$user.id),
+                    distance: distance,
+                    direction: direction,
+                    responded: false
+                )
+                
+                try await receipt.save(on: req.db)
+                receiptsCreated += 1
+            }
+        }
+        
+        req.logger.info("📨 Created \(receiptsCreated) signal receipts for signal: \(signal.id?.uuidString ?? "unknown")")
+        
+    } catch {
+        req.logger.error("❌ Error processing signal receipts: \(error)")
+    }
+}
+
+/// 두 지점 간의 거리 계산 (하버사인 공식, km 단위)
+private func calculateDistance(lat1: Double, lng1: Double, lat2: Double, lng2: Double) -> Double {
+    let earthRadiusKm = 6371.0
+    
+    let dLat = (lat2 - lat1) * .pi / 180
+    let dLng = (lng2 - lng1) * .pi / 180
+    
+    let a = sin(dLat / 2) * sin(dLat / 2) +
+            cos(lat1 * .pi / 180) * cos(lat2 * .pi / 180) *
+            sin(dLng / 2) * sin(dLng / 2)
+    
+    let c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    
+    return earthRadiusKm * c
+}
+
+/// 방향 계산 (8방향)
+private func calculateDirection(fromLat: Double, fromLng: Double, toLat: Double, toLng: Double) -> String {
+    let dLat = toLat - fromLat
+    let dLng = toLng - fromLng
+    
+    let angle = atan2(dLng, dLat) * 180 / .pi
+    let normalizedAngle = angle < 0 ? angle + 360 : angle
+    
+    switch normalizedAngle {
+    case 0..<22.5, 337.5...360:
+        return "북"
+    case 22.5..<67.5:
+        return "북동"
+    case 67.5..<112.5:
+        return "동"
+    case 112.5..<157.5:
+        return "남동"
+    case 157.5..<202.5:
+        return "남"
+    case 202.5..<247.5:
+        return "남서"
+    case 247.5..<292.5:
+        return "서"
+    case 292.5..<337.5:
+        return "북서"
+    default:
+        return "북"
+    }
+}
+
 // MARK: - Route Handlers
 
 /// 사용자 등록 - Direct Database Access (Temporary Fix)
@@ -124,7 +231,7 @@ func updateUserSettings(req: Request) async throws -> Response {
     )
 }
 
-/// 신호 전송 - Direct Processing (Temporary Fix)
+/// 신호 전송 - Direct Processing with Database Storage
 func sendSignal(req: Request) async throws -> SignalResponse {
     req.logger.info("🔄 Processing signal request directly in Gateway")
     
@@ -136,23 +243,37 @@ func sendSignal(req: Request) async throws -> SignalResponse {
     let validatedRequest = try validationResult.get()
     req.logger.info("✅ Validation passed")
     
-    // Direct signal processing instead of forwarding to SignalService
-    req.logger.info("🎯 Processing signal directly in Gateway")
+    // Create and save signal to database
+    req.logger.info("🎯 Saving signal to database")
     
-    // Create signal response
-    let signalResponse = SignalResponse(
-        signalID: UUID(),
+    let signal = Signal(
         senderID: validatedRequest.senderID,
-        sentAt: Date(),
+        latitude: validatedRequest.location.latitude.value,
+        longitude: validatedRequest.location.longitude.value,
         maxDistance: Int(validatedRequest.maxDistance?.value ?? 10.0),
         status: .active
+    )
+    
+    try await signal.save(on: req.db)
+    req.logger.info("💾 Signal saved to database with ID: \(signal.id?.uuidString ?? "unknown")")
+    
+    // Find nearby users and create signal receipts
+    await processSignalReceipts(signal: signal, on: req)
+    
+    // Create response
+    let signalResponse = SignalResponse(
+        signalID: signal.id ?? UUID(),
+        senderID: validatedRequest.senderID,
+        sentAt: signal.sentAt,
+        maxDistance: signal.maxDistance,
+        status: signal.status
     )
     
     req.logger.info("✅ Signal processed successfully: \(signalResponse.signalID)")
     return signalResponse
 }
 
-/// 수신된 신호 조회 - Direct Processing (Temporary Fix)
+/// 수신된 신호 조회 - Direct Database Processing
 func getReceivedSignals(req: Request) async throws -> [ReceivedSignal] {
     req.logger.info("🔄 Processing received signals request directly in Gateway")
     
@@ -162,15 +283,40 @@ func getReceivedSignals(req: Request) async throws -> [ReceivedSignal] {
     
     req.logger.info("📥 Getting received signals for user: \(userID)")
     
-    // Direct processing instead of forwarding to SignalService
-    req.logger.info("🎯 Processing received signals directly in Gateway")
-    
-    // For now, return empty array since we don't have signal storage implemented
-    // In a real implementation, this would query the database for received signals
-    let receivedSignals: [ReceivedSignal] = []
-    
-    req.logger.info("✅ Received signals processed: \(receivedSignals.count) signals found")
-    return receivedSignals
+    do {
+        // 데이터베이스에서 수신된 신호들을 조회
+        let signalReceipts = try await SignalReceipt.query(on: req.db)
+            .filter(\.$receiver.$id == userID)
+            .join(Signal.self, on: \SignalReceipt.$signal.$id == \Signal.$id)
+            .join(User.self, on: \Signal.$sender.$id == \User.$id)
+            .filter(Signal.self, \.$expiresAt > Date()) // 만료되지 않은 신호만
+            .sort(Signal.self, \.$sentAt, .descending)
+            .all()
+        
+        req.logger.info("📊 Found \(signalReceipts.count) signal receipts from database")
+        
+        // ReceivedSignal 형식으로 변환
+        let receivedSignals = try signalReceipts.map { receipt in
+            let signal = try receipt.joined(Signal.self)
+            let sender = try signal.joined(User.self)
+            
+            return ReceivedSignal(
+                signalID: signal.id ?? UUID(),
+                senderID: UserID(sender.id ?? UUID()),
+                distance: receipt.distance,
+                direction: receipt.direction,
+                receivedAt: receipt.receivedAt
+            )
+        }
+        
+        req.logger.info("✅ Processed \(receivedSignals.count) received signals for user: \(userID)")
+        return receivedSignals
+        
+    } catch {
+        req.logger.error("❌ Error querying received signals: \(error)")
+        // 에러 발생 시 빈 배열 반환
+        return []
+    }
 }
 
 /// 신호 응답
@@ -194,24 +340,42 @@ func respondToSignal(req: Request) async throws -> SignalResponse {
     )
 }
 
-/// 위치 업데이트
+/// 위치 업데이트 - Direct Database Processing
 func updateLocation(req: Request) async throws -> Response {
+    req.logger.info("🔄 Processing location update directly in Gateway")
+    
     let locationRequest = try req.content.decode(LocationUpdateRequest.self)
+    req.logger.info("📥 Decoded location update request: \(locationRequest)")
     
     // Validation
     let validationResult = validateLocation(locationRequest)
     let validatedRequest = try validationResult.get()
+    req.logger.info("✅ Location validation passed")
     
-    // Forward to Location Service
-    let serviceURLs = req.application.storage[ServiceURLsKey.self]!
-    let locationServiceURL = "\(serviceURLs.locationService)/locations/update"
-    
-    return try await forwardRequest(
-        to: locationServiceURL,
-        method: .POST,
-        body: validatedRequest,
-        on: req
-    )
+    do {
+        // 기존 위치 삭제 (사용자당 최신 위치만 유지)
+        try await UserLocation.query(on: req.db)
+            .filter(\.$user.$id == validatedRequest.userID.value)
+            .delete()
+        
+        // 새로운 위치 저장 (간단한 구현 - 실제로는 암호화 필요)
+        let userLocation = UserLocation(
+            userID: validatedRequest.userID,
+            encryptedLatitude: String(validatedRequest.location.latitude.value), // TODO: 실제 암호화 구현
+            encryptedLongitude: String(validatedRequest.location.longitude.value), // TODO: 실제 암호화 구현
+            latitude: validatedRequest.location.latitude.value,
+            longitude: validatedRequest.location.longitude.value
+        )
+        
+        try await userLocation.save(on: req.db)
+        req.logger.info("💾 Location saved for user: \(validatedRequest.userID.value)")
+        
+        return Response(status: .ok)
+        
+    } catch {
+        req.logger.error("❌ Error saving location: \(error)")
+        throw Abort(.internalServerError, reason: "Failed to save location")
+    }
 }
 
 // MARK: - Helper Functions
